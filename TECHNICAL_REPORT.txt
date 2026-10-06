@@ -1,0 +1,205 @@
+MANGA TRANSLATOR BYOK - TECHNICAL REPORT
+Date: 2026-10-06
+
+DELIVERY AND SCOPE
+The independent extension is this byok directory. The original extension is
+preserved in the parent directory and is not imported or packaged by this one.
+An additional original-source backup is stored at:
+C:\Users\360he\OneDrive\Documents\torii-original-20261006-083952.zip
+Automatic approval review blocked deletion of the original directories. The
+rebuilt extension therefore uses an independent manifest and independent files.
+No original files were deleted or modified. No build or browser was run.
+
+ORIGINAL ARCHITECTURE
+The supplied directory was a packaged Manifest V3 extension, version 2.22.6,
+with no package.json, source build system, or private server implementation.
+manifest.json: module service worker, popup, content scripts, MAIN-world
+untaint script, broad host access, OAuth configuration, packaged update URL,
+seven commands, and resources exposed to webpages.
+scripts/background.js: Firebase initialization, identity and user state,
+Firestore records, credit/subscription handling, remote key encryption,
+translation/inpainting uploads, downloads, screenshot handling, session header
+rules, reporting and install/uninstall flows.
+scripts/firebase.js: bundled Firebase identity, Firestore and network code.
+scripts/content.js: image/canvas discovery, controls, image extraction,
+screenshot/crop, server result replacement, overlays, editing, and exports.
+Its rendering and controls were interwoven with account and credit messages.
+scripts/untaint.js: MAIN-world image/canvas handling.
+scripts/translationCache.js: IndexedDB translation cache keyed by image/settings.
+scripts/fontStore.js: IndexedDB font storage.
+scripts/imageDownload.js, zip.js and jspdf.js: export support.
+popup/popup.html, popup.js, popup.css: settings, user state, balances and controls.
+html/menu.html, edit.html, download.html, details.html: injected dialogs.
+css, fonts, images and _locales: UI assets and localized messages.
+_metadata: original package verification data, unsuitable for a changed package.
+
+ORIGINAL NETWORK MAP / REMOVED DEPENDENCIES
+Background fetch call sites were inspected for image retrieval, translation,
+remote BYOK encryption, inpainting, IP lookup and error reporting. Content fetch
+sites loaded bundled HTML and source images. Font/cache/download helpers and
+the popup did not contain an additional remote fetch pipeline.
+The bundled Firebase module provided identity/database networking; it is absent
+from the rebuilt package, along with its configuration and all consumers.
+Original dependency categories excluded from the rebuilt extension:
+- api.toriitranslate.com/api/v2/upload and
+  direct-api.toriitranslate.com/api/v2/upload: translation/OCR/image processing.
+- api.toriitranslate.com/api/inpaint: image reconstruction.
+- api.toriitranslate.com/api/byok/encrypt: server-managed key encryption.
+- api.toriitranslate.com/api/reporting: error reporting.
+- api64.ipify.org: external IP lookup.
+- Firebase Authentication and Firestore: identity, user records and state.
+- toriitranslate.com/signin and /login: external identity flow.
+- Tori /account, /pricing, /install, /feedback, /updates and other product links.
+- Original extension-store update URL, OAuth fields, identity key, product/store
+  links, and install/uninstall navigation.
+Credits, the initial allowance, balance caches, deductions, subscription and
+premium checks, billing controls, account messages and profile UI are absent.
+The original already had BYOK fields, but these still routed through Tori;
+none of that remote dependency is retained in the new provider layer.
+
+REBUILT ARCHITECTURE / FILE INVENTORY
+manifest.json: independent MV3 entry points, settings page, image context menu,
+keyboard command, storage/activeTab/contextMenus permissions and host access.
+scripts/config.js: defaults, validation, key/model readiness, public projection.
+scripts/providers.js: common request adapter interface and validated regions.
+scripts/background.js: trusted local storage, provider requests, image retrieval,
+bounded image decoding, overlapping OCR tiles and message routing.
+scripts/render.js: wrapping, auto-sizing, region deduplication and canvas text.
+scripts/content.js: hover controls, image selection, sequential page processing,
+progress, cancellation of pending rendering, overlays, region editing and PNG.
+popup/settings.html, settings.js, style.css: local configuration and connection test.
+popup/popup.html, popup.js: page actions and settings link.
+package.json: Node test command only; no dependencies or build scripts.
+tests/core.test.js, tests/worker.test.js: mocked behavior tests.
+README.txt, TECHNICAL_REPORT.txt: installation and implementation notes.
+Reused unchanged: fonts/NotoSans.ttf, fonts/WildWords.otf, images/16.png,
+images/48.png, images/128.png. Other original frontend dependencies were not
+copied because they require the larger backend/account-coupled application.
+
+PROVIDER CONTRACT AND REQUEST FLOW
+Adapters declare vision, OCR, translation and region capabilities and supply
+request URL, headers, body and response extraction. analyze() performs joint
+OCR/translation/region analysis and returns a common validated representation:
+{x, y, width, height, source, text, background}, coordinates normalized 0-1000.
+Unsupported functions such as neural inpainting and dedicated OCR are not
+advertised as provider capabilities. No separate OCR key/provider is necessary.
+
+Flow: select image -> obtain public settings -> check key/model readiness in
+worker -> extract image locally or retrieve source -> decode and downscale ->
+split long images into overlapping tiles -> send tiles sequentially to the
+selected vision API -> validate JSON -> map regions to image coordinates ->
+deduplicate overlapping regions -> fill regions and fit translated text locally.
+Source pixels remain unchanged in the webpage; the visual overlay is removable.
+Page processing uses the same pipeline sequentially for loaded images/canvases.
+An API error stops that page job with a visible message. There are no automatic
+paid retries. Restore discards pending overlays. Stop aborts the active request
+and cancels remaining images; the overlay stays visible while a request runs.
+Cancellation closes the extension's request; a provider may still process or
+charge for work it already received.
+
+LOCAL STORAGE
+chrome.storage.local contains one config object:
+provider, endpoint, apiKey, model, source, target, quality, instructions,
+detectSfx, cleanup, font, fontScale, tileSize, minImageSize, requestTimeout.
+requestTimeout is seconds (0 = automatic). Automatic uses 240 seconds for model
+IDs containing gemma-4-31b-it and 90 seconds otherwise. Explicit limits are
+bounded to 30-240 seconds. Gemma uses tiles up to 1000 pixels, respecting smaller
+user settings, and streaming on the Gemini and compatible adapters.
+Storage is restricted to TRUSTED_CONTEXTS. Content scripts receive a public
+projection without apiKey or endpoint. Save/read/delete/test are restricted to
+the extension's popup/settings URLs. Keys are not put in URL parameters, image
+requests, logs, exported images or page messages. Keys are not encrypted at rest.
+Only one selected provider/key/model is saved at a time. Switching provider or
+editing the endpoint clears the key field before saving. Translation results
+are held in page memory, not a persistent cache. Reloading removes them.
+
+ALL REMAINING NETWORK REQUESTS
+1. POST <configured base URL>/chat/completions for OpenAI-compatible providers.
+   Default base: https://api.openai.com/v1. Sends selected model, instructions,
+   language preferences and image tile, with API key in Authorization header.
+2. POST https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent
+   for Gemini. Sends image/text and the key via x-goog-api-key. Gemma uses
+   :streamGenerateContent?alt=sse on the same host instead. The SSE reader handles
+   fragmented events and UTF-8, skips thought parts, and remains cancellable.
+3. POST https://api.anthropic.com/v1/messages for Anthropic. Sends image/text,
+   model, response length setting and key via x-api-key.
+Only the selected adapter runs. A connection test sends a short text prompt
+through that same adapter. Provider redirects are rejected, and cookies omitted.
+4. GET the selected image's existing HTTP(S) source when local canvas extraction
+   is unavailable. No provider key or cookies accompany this request. Source
+   image redirects are allowed; image servers may reject hotlink requests.
+5. Local data URLs and packaged font/resource reads are not external traffic.
+No telemetry, reporting, IP lookup, Tori service or remotely loaded code remains.
+Broad HTTP(S) host access supports arbitrary manga sites and user endpoints.
+There is no request-header rewriting or injected MAIN-world code.
+
+ERRORS AND LIMITS
+Explicit errors cover missing key/model, denied/invalid key, quota exhaustion,
+rate limiting, unsupported model/request/endpoint, network/timeout, malformed
+responses, OCR refusal/empty output, inaccessible images and invalid geometry.
+No text detected is a valid OCR result. Provider response text is never rendered
+as HTML. Inputs and translations are rendered via canvas/textContent/form values.
+Images are limited to 16 MB downloaded bytes, 32 million working pixels and
+32760 working rows. Tiles are 600-2000 pixels with 100-pixel overlap. The default
+working width is at most 1400 pixels. PNG exports use that working resolution.
+Requests time out rather than retrying indefinitely. The browser's MV3 worker
+lifecycle can interrupt slow provider responses; this has not been live-tested.
+
+REPLACED OR UNSUPPORTED ORIGINAL FUNCTIONALITY
+Vision-estimated text regions replace the private OCR/text/bubble detector.
+Coordinates and OCR accuracy depend on the chosen model and may need correction.
+Solid background rectangles replace neural inpainting; textured art is not
+reconstructed. Tile boundaries can still split dialogue despite overlap.
+The lightweight editor supports translation text and rectangular geometry;
+original warps, brushes, custom font management, precise bubble masks, cached
+translations, automatic translation, screenshots/crop, PDF/ZIP export and
+original multilingual interface are not carried over.
+Loaded IMG and readable CANVAS elements are supported in the top-level document.
+CSS background images, closed shadow trees, embedded frames, browser-protected
+pages and unloaded lazy images are not scanned. Scroll to load pages first.
+Fixed overlays follow normal image positioning and object-fit, but complex CSS
+transforms, ancestor clipping, padding/borders or unusual stacking may misalign.
+Fonts fall back to system glyphs where the bundled fonts lack a script.
+Only Chromium packaging is provided; Firefox and Safari are not verified.
+
+TEST RESULTS
+All 23 automated tests passed; JavaScript syntax and resource checks passed.
+OCR requests now include an explicit JSON-only output contract: exact fields,
+coordinate bounds, escaped strings, no Markdown or explanation, and task
+preferences encoded separately as JSON data. The contract stays in the image
+request for Gemma compatibility; no unverified system-role, thinking-control,
+or structured-output API parameters were added. This improves instructions but
+does not guarantee model compliance or reduce internal reasoning.
+Additional checks cover streamed Gemini OCR, compatible streaming, JSON fallback,
+split UTF-8, cancellation during stalled streams, slow-model defaults, and
+separate extension/provider timeout messages. No live Gemma call was performed.
+Cancellation tests cover each adapter, response-body reads, image downloads,
+tab isolation, requests waiting for settings and restarting after cancellation.
+OCR parsing also accepts numeric strings, missing source transcription, named
+bounding boxes, consistent fractional coordinates and explicit percentages.
+Small edge overshoots are clipped; unusable boxes still produce specific errors.
+Automated Node tests validate initial settings, missing keys/models, public
+secret projection, endpoint validation, each provider's image request/response,
+language/model changes, API error categories, malformed OCR/coordinate rejection,
+tile overlap deduplication, wrapping/positioning, cleanup setting, installation
+handler defaults, storage persistence across simulated worker reload, key deletion,
+message access boundaries, connection-test routing, and multi-tile analysis.
+These tests mock browser storage, image decoding, canvas and API responses.
+Syntax checks cover all JavaScript files. Manifest/resource paths are checked.
+Source scan found no legacy Tori/account/credit dependencies in runtime code.
+The only broad keyword matches in runtime code are Authorization (provider key
+header) and max_tokens (Anthropic output length), both necessary provider fields.
+Terms in this report describe removed architecture, not executable dependencies.
+
+NOT EXECUTED: browser installation, browser restart, UI/overlay visual checks,
+actual API connection, real manga OCR, single-image or full-page end-to-end
+translation. No API key was provided and the user explicitly prohibited browser
+use and builds. Mock success is not evidence of real-provider compatibility or
+visual fidelity. Manual checks to perform after loading: save and reopen settings,
+test connection, translate one image, translate a loaded page, change language,
+edit/restore/export, try a rejected key, and delete the key.
+
+BUILD / INSTALLATION
+No build step exists or is needed. Load this byok folder as an unpacked extension
+using the steps in README.txt. Do not load the parent/original manifest.
+For the non-browser automated checks: node --test tests/*.test.js

@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Manga Translator Settings</title><link rel="stylesheet" href="style.css"></head><body><main>
+<h1>Manga Translator</h1><p>Your image tiles and language preferences go directly to your selected provider. API usage may incur provider charges. Keys stay in this extension's local storage, without sync; they are not encrypted at rest.</p>
+<form id="settings">
+<h2>API configuration</h2>
+<label>API Provider<select name="provider"><option value="compatible">OpenAI-compatible</option><option value="gemini">Gemini</option><option value="anthropic">Anthropic</option></select></label>
+<label id="endpoint-label">API base URL<input name="endpoint" type="url" required><small>Include /v1 where required. Your key is sent to this endpoint.</small></label>
+<label>API Key<input name="apiKey" type="password" autocomplete="off" spellcheck="false"></label>
+<button type="button" class="secondary" id="delete">Delete API Key</button>
+<label>Vision model ID<input name="model" placeholder="Enter your provider's exact vision model ID" spellcheck="false"></label>
+<small>OCR and translation use the selected vision provider together. Models must accept images and return JSON text regions.</small>
+<h2>Languages and translation</h2><div class="grid">
+<label>Source language<input name="source" list="languages"></label><label>Target language<input name="target" list="languages" required></label></div>
+<datalist id="languages"><option>Auto</option><option>English</option><option>Japanese</option><option>Korean</option><option>Chinese</option><option>Spanish</option><option>French</option><option>German</option><option>Portuguese</option><option>Arabic</option></datalist>
+<label>Translation quality<select name="quality"><option value="natural">Natural wording</option><option value="literal">Literal wording</option></select></label>
+<label>Translation preferences<textarea name="instructions" rows="3" maxlength="2000" placeholder="Terminology, tone, character names…"></textarea></label>
+<label>Request timeout<select name="requestTimeout"><option value="0">Automatic (90 seconds; 4 minutes for Gemma 4 31B)</option><option value="60">1 minute</option><option value="90">90 seconds</option><option value="180">3 minutes</option><option value="240">4 minutes</option></select><small>Gemma 4 31B uses streaming and OCR tiles up to 1000 pixels to reduce each request. Stop remains available while waiting. Your API host may enforce a shorter limit.</small></label>
+<h2>OCR and rendering</h2>
+<label><input name="detectSfx" type="checkbox">Include sound effects</label>
+<label><input name="cleanup" type="checkbox">Cover original text with estimated background color</label>
+<small>Cleanup uses rectangular fills. Complex artwork and accurate bubble boundaries may require manual corrections.</small>
+<div class="grid"><label>OCR tile size (pixels)<input name="tileSize" type="number" min="600" max="2000" step="100"></label><label>Minimum image size (pixels)<input name="minImageSize" type="number" min="50" max="1000"></label></div>
+<div class="grid"><label>Font<select name="font"><option value="NotoSans">Noto Sans</option><option value="WildWords">Wild Words</option></select></label><label>Font scale<input name="fontScale" type="number" min="0.5" max="2" step="0.1"></label></div>
+<button type="submit">Save Settings</button><button type="button" id="test">Save &amp; Test API Connection</button>
+</form><p id="status" role="status" aria-live="polite"></p><script type="module" src="settings.js"></script></main></body></html>
