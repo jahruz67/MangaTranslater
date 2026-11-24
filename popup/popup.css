@@ -1,6 +1,7 @@
 body.popup {
   box-sizing: border-box;
-  width: min(380px, 100vw);
+  /* A fixed desktop width lets the browser size the extension popup. */
+  width: 380px;
   padding: 22px;
   background: radial-gradient(ellipse at 0 0, #29213f 0, transparent 65%), #15141c;
   color: #f5f3fb;
@@ -16,19 +17,19 @@ body.popup {
 .brand-copy { flex: 1; min-width: 0; }
 .popup h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.5px; }
 .brand-copy p { margin: 3px 0 0; font-size: 11px; color: #aaa3b8; }
-.popup .settings-button { display: grid; place-items: center; padding: 9px; border: 1px solid #ffffff10; border-radius: 10px; color: #b9b0cb; background: #ffffff05; }
+.popup .settings-button { display: grid; place-items: center; flex-shrink: 0; min-width: 44px; padding: 9px; border: 1px solid #ffffff10; border-radius: 10px; color: #b9b0cb; background: #ffffff05; }
 .popup .settings-button:hover { background: #ffffff10; color: #fff; border-color: #ffffff25; }
 .settings-button svg { width: 18px; height: 18px; }
 .status-card { display: flex; align-items: flex-start; gap: 9px; padding: 11px 12px; border: 1px solid #ffffff0e; border-radius: 10px; background: #ffffff04; margin-bottom: 16px; }
 .status-dot { width: 6px; height: 6px; margin-top: 6px; border-radius: 50%; background: #a89bc0; flex-shrink: 0; }
 .status-card[data-state="ready"] .status-dot { background: #91d5ba; box-shadow: 0 0 0 3px #91d5ba10; }
 .status-card[data-state="attention"] .status-dot { background: #e9be83; }
-.popup #status { min-height: 0; margin: 0; flex: 1; font-size: 11px; line-height: 1.6; color: #c8c0d6; }
-.local-badge { margin-top: 1px; font-size: 9px; letter-spacing: .8px; font-weight: 650; color: #b9a3ea; border: 1px solid #b9a3ea26; padding: 1px 5px; border-radius: 4px; }
+.popup #status { min-width: 0; min-height: 0; margin: 0; flex: 1; font-size: 11px; line-height: 1.6; color: #c8c0d6; }
+.local-badge { flex-shrink: 0; margin-top: 1px; font-size: 9px; letter-spacing: .8px; font-weight: 650; color: #b9a3ea; border: 1px solid #b9a3ea26; padding: 1px 5px; border-radius: 4px; }
 .popup .translate-button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 17px 14px; text-align: left; border: 1px solid #a18ae5; border-radius: 12px; background: linear-gradient(110deg, #8162d7, #7054c1); box-shadow: 0 5px 18px #08050f40, inset 0 1px 0 #ffffff19; }
 .popup .translate-button:hover { background: linear-gradient(110deg, #9071e6, #7c60cd); border-color: #beaaef; }
 .action-icon { display: grid; place-items: center; width: 35px; height: 35px; flex-shrink: 0; border-radius: 10px; background: #ffffff15; }
-.action-copy { flex: 1; }
+.action-copy { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .action-copy strong { display: block; font-size: 14px; font-weight: 650; }
 .action-copy > span { display: block; margin-top: 2px; font-size: 10px; color: #eee6ff; }
 .popup .arrow { width: 17px; height: 17px; opacity: .8; }
@@ -46,5 +47,15 @@ body.popup {
 .popup footer { margin-top: 16px; text-align: center; color: #a49bae; font-size: 10px; }
 .popup .pick-button { width: 100%; margin-top: 9px; min-height: 44px; }
 @media(max-width:360px){body.popup{padding:16px}.popup-header{gap:8px}.shortcut-heading{flex-wrap:wrap}.secondary-actions{grid-template-columns:1fr}}
-@media(hover:none) and (pointer:coarse){body.popup{width:100vw;max-width:480px;margin-inline:auto;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}.shortcut{display:none}.brand-copy p,.popup #status,.shortcut-card p{font-size:13px}.action-copy>span,.popup footer{font-size:12px}}
+@media (hover: none) and (pointer: coarse) {
+  body.popup {
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  }
+  .shortcut { display: none; }
+  .brand-copy p, .popup #status, .shortcut-card p { font-size: 13px; }
+  .action-copy > span, .popup footer { font-size: 12px; }
+}
 @media (prefers-reduced-motion: reduce) { .popup button { transition: none; } }
