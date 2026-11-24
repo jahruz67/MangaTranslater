@@ -114,7 +114,7 @@ export function parseRegions(text) {
     if (width <= 0 || height <= 0) fail("has an empty or reversed text box");
     // Clip small edge overshoots, but reject major unit/geometry errors.
     if (x < -20 || y < -20 || x >= 1000 || y >= 1000 || x+width > 1020 || y+height > 1020 || x+width <= 0 || y+height <= 0) {
-      fail("has a text box outside the image (expected 0–1000 coordinates)");
+      fail(`has a text box outside the image (x=${x}, y=${y}, width=${width}, height=${height}; expected 0–1000 coordinates)`);
     }
     const left = Math.max(0, x), top = Math.max(0, y);
     return { x: left, y: top, width: Math.min(1000, x+width)-left, height: Math.min(1000, y+height)-top,
@@ -129,9 +129,9 @@ export function buildOcrPrompt(c) {
   if (c.instructions) task.translation_preferences = c.instructions.slice(0, 2000);
   return `Translate all readable manga dialogue/narration; one region per speech bubble. Do not invent text.
 Return exactly ONE complete JSON object. No Markdown fences, explanations or reasoning.
-Format: {"coordinate_system":"normalized_1000","regions":[{"box":[50,100,200,150],"text":"translated text"}]}
+Format: {"coordinate_system":"normalized_1000","regions":[{"box_2d":[100,50,250,250],"text":"translated text"}]}
 Format example only; never copy its sample text or coordinates.
-box=[x,y,width,height] covers the original text in the ENTIRE image, using 0–1000 numbers, not pixels. x/y are top-left; width/height are sizes. Require x,y >= 0, width,height > 0, x + width <= 1000, y + height <= 1000.
+box_2d=[top,left,bottom,right] covers the original text in the ENTIRE image, using 0–1000 numbers, not pixels. bottom/right are corner positions, not sizes. Require 0 <= top < bottom <= 1000 and 0 <= left < right <= 1000. Use only box_2d for coordinates.
 text is only the translation, nonempty, up to 5000 characters. At most 200 regions. Use valid JSON escaping.
 Omit background when white/uncertain; otherwise add "background":"#rrggbb" with the estimated six-digit fill color.
 ${c.includeSource ? 'Also include "source" with the original transcription for each region.' : "Omit source transcriptions."}

@@ -117,9 +117,22 @@ test("OCR clips small edge errors but rejects unusable geometry with a specific 
   for (const value of [null, "", true, "50px"]) {
     assert.throws(() => parseRegions(JSON.stringify({ regions: [{ ...region, x: value }] })), /region 1 is missing numeric/);
   }
-  assert.throws(() => parseRegions(JSON.stringify({ regions: [{ ...region, x: 1200 }] })), /outside the image/);
+  assert.throws(() => parseRegions(JSON.stringify({ regions: [{ ...region, x: 1200 }] })), /outside the image \(x=1200, y=100, width=200, height=150/);
   assert.throws(() => parseRegions(JSON.stringify({ coordinate_system: "pixels", regions: [region] })), /not pixels/);
   assert.throws(() => parseRegions(JSON.stringify({ regions: [{ ...region, width: 0 }] })), /empty or reversed/);
+});
+
+test("OCR corner boxes near image edges convert positions to sizes before bounds checks", () => {
+  const regions = parseRegions(JSON.stringify({ coordinate_system: "normalized_1000", regions: [
+    { box_2d: [800, 700, 980, 950], text: "Edge dialogue" },
+    { box_2d: [900, 850, 1010, 1005], text: "Slight edge overshoot" }
+  ] }));
+  assert.deepEqual(regions.map(({ x, y, width, height }) => [x, y, width, height]), [
+    [700, 800, 250, 180], [850, 900, 150, 100]
+  ]);
+  assert.throws(() => parseRegions(JSON.stringify({ regions: [
+    { box_2d: [800, 700, 750, 950], text: "Reversed corners" }
+  ] })), /empty or reversed/);
 });
 test("renderer wraps CJK, positions text, fills only when requested", () => {
   const calls = [];

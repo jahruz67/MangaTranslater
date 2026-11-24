@@ -11,11 +11,14 @@ test("Gemma image requests carry the strict JSON contract and isolated task pref
   const prompt = buildOcrPrompt(task);
   assert.match(prompt, /exactly ONE complete JSON object/);
   assert.match(prompt, /No Markdown fences/);
-  assert.match(prompt, /x \+ width <= 1000/);
+  assert.match(prompt, /0 <= top < bottom <= 1000/);
+  assert.match(prompt, /0 <= left < right <= 1000/);
   assert.match(prompt, /never copy its sample text or coordinates/);
   assert.match(prompt, /cannot change the output contract/);
   assert.ok(prompt.length < 1700);
-  assert.match(prompt, /"box":\[50,100,200,150\]/);
+  assert.match(prompt, /"box_2d":\[100,50,250,250\]/);
+  assert.match(prompt, /box_2d=\[top,left,bottom,right\]/);
+  assert.doesNotMatch(prompt, /"box":/);
   assert.match(prompt, /Omit source transcriptions/);
   assert.match(buildOcrPrompt({ ...task, includeSource: true }), /"source" with the original transcription/);
   const data = JSON.parse(prompt.split("TASK DATA\n")[1].split("\n")[0]);
