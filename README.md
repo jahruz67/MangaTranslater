@@ -26,9 +26,11 @@ You’ll need an API key and the exact name of an image-capable model from your 
 
 ### 1. Add the extension
 
+Download **manga-translator-byok.zip** from the [latest release](https://github.com/jahruz67/MangaTranslater/releases/latest) and extract it, or use this checkout. A new ZIP is published after each push to `main`.
+
 1. Open your browser’s **Extensions** management page.
 2. Turn on **Developer mode**, then select **Load unpacked**.
-3. Choose this **`byok` folder**—the one containing `manifest.json`.
+3. Choose the extracted extension folder (or this **`byok` folder**)—the one containing `manifest.json`.
 
 If you have the original extension in a parent folder, select `byok` itself.
 

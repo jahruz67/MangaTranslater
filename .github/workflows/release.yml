@@ -1,0 +1,42 @@
+name: Package extension
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: extension-release-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Package extension files
+        run: zip -r manga-translator-byok.zip manifest.json scripts popup fonts images
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="build-${GITHUB_SHA}"
+          version="$(jq -r '.version' manifest.json)"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release upload "$tag" manga-translator-byok.zip --clobber
+          else
+            gh release create "$tag" manga-translator-byok.zip \
+              --target "$GITHUB_SHA" \
+              --title "Manga Translator BYOK ${version} (${GITHUB_SHA:0:7})" \
+              --notes "Download manga-translator-byok.zip, extract it, then enable Developer mode and use Load unpacked in Chrome or Edge to select the folder containing manifest.json." \
+              --latest
+          fi
