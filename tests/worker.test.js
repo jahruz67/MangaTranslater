@@ -164,3 +164,35 @@ test("failed OCR is never cached; successful no-text tiles are reused", async ()
     assert.equal(calls, 2);
   } finally { globalThis.fetch = previousFetch; }
 });
+
+test("Firefox mobile starts without desktop-only APIs and uses native storage access arguments when available", async () => {
+  const previousBrowser = globalThis.browser;
+  try {
+    for (const supportsAccessLevel of [false, true]) {
+      let installedMobile, accessLevel;
+      const local = { ...chrome.storage.local };
+      delete local.setAccessLevel;
+      if (supportsAccessLevel) local.setAccessLevel = async value => { accessLevel = value; };
+      globalThis.browser = {
+        storage: { local }, tabs: {}, runtime: { ...chrome.runtime,
+          getBrowserInfo: async () => ({ name: "Firefox" }),
+          getURL: path => `moz-extension://test/${path}`,
+          onInstalled: { addListener: listener => { installedMobile = listener; } }
+        }
+      };
+      const mobile = await import(`../scripts/background.js?firefox-mobile-${supportsAccessLevel}`);
+      await installedMobile();
+      assert.equal(accessLevel, supportsAccessLevel ? "TRUSTED_CONTEXTS" : undefined);
+      await mobile.handle({ type: "save-config", config: { apiKey: "mobile-key", model: "mobile-model" } },
+        { id: "test", url: "moz-extension://test/popup/settings.html" });
+      const safe = await mobile.handle({ type: "public-config" }, content);
+      assert.equal(safe.configured, true);
+      assert.equal(safe.apiKey, undefined);
+      assert.equal((await mobile.readConfig()).model, "mobile-model");
+      await assert.rejects(mobile.handle({ type: "get-config" }, content), /Open Settings/);
+    }
+  } finally {
+    if (previousBrowser === undefined) delete globalThis.browser;
+    else globalThis.browser = previousBrowser;
+  }
+});

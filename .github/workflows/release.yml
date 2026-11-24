@@ -37,6 +37,6 @@ jobs:
             gh release create "$tag" manga-translator-byok.zip \
               --target "$GITHUB_SHA" \
               --title "Manga Translator BYOK ${version} (${GITHUB_SHA:0:7})" \
-              --notes "Download manga-translator-byok.zip, extract it, then enable Developer mode and use Load unpacked in Chrome or Edge to select the folder containing manifest.json." \
+              --notes "Desktop Chrome/Edge: extract manga-translator-byok.zip and use Developer mode > Load unpacked. Android: use your browser's supported extension installation method. Firefox: this ZIP is unsigned and requires Mozilla signing for normal installation, including Android." \
               --latest
           fi

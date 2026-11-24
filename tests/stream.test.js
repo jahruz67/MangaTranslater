@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULTS, normalize, requestOptions } from "../scripts/config.js";
+import { DEFAULTS, normalize, publicConfig, requestOptions } from "../scripts/config.js";
 import { analyze, buildOcrPrompt, callProvider, providers } from "../scripts/providers.js";
 import { withDeadline } from "../scripts/requests.js";
 const config = { ...DEFAULTS, provider: "gemini", model: "gemma-4-31b-it", apiKey: "test-key" };
@@ -42,6 +42,8 @@ function response(events) {
 test("Gemma defaults to four minutes and smaller tiles; explicit timeout wins", () => {
   assert.deepEqual(requestOptions(config), { timeoutMs: 240000, tileSize: 1000, stream: true });
   assert.equal(requestOptions({ ...config, tileSize: 600 }).tileSize, 600);
+  assert.equal(publicConfig(config).effectiveTileSize, 1000);
+  assert.equal(publicConfig({ ...config, tileSize: 600 }).effectiveTileSize, 600);
   assert.equal(requestOptions({ ...config, requestTimeout: 60 }).timeoutMs, 60000);
   assert.equal(requestOptions({ ...config, model: "another-model" }).timeoutMs, 90000);
   assert.equal(normalize({ ...config, requestTimeout: "240" }).requestTimeout, 240);

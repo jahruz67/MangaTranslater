@@ -2,7 +2,7 @@
 
 ### Your manga. Your language. Your choice of AI.
 
-Translate manga images right where you read them. Hover over a panel, translate a page, and keep reading with translated text layered over the original artwork.
+Translate manga images right where you read them. Tap or hover over a panel, translate a page, and keep reading with translated text layered over the original artwork.
 
 **BYOK means “bring your own key.”** Connect your own AI provider, choose your languages, and control how your translations read.
 
@@ -18,7 +18,7 @@ Translate manga images right where you read them. Hover over a panel, translate 
 - **Keep a copy.** Save a translated image as a PNG.
 - **Return to the artwork.** Remove a translation whenever you want. Original page images stay unchanged.
 
-Works with **Chrome and Edge** (Chromium 114 or newer). Supports **OpenAI-compatible providers, Gemini, and Anthropic** with an image-capable model.
+Targets **Chrome and Edge** (Chromium 121 or newer), **Firefox 140+**, and **Firefox for Android 142+**. Android Edge requires a version and installation method that supports custom extensions. Supports **OpenAI-compatible providers, Gemini, and Anthropic** with an image-capable model. Phone/browser behavior has not yet been tested on devices.
 
 ## Get started
 
@@ -36,6 +36,8 @@ If you have the original extension in a parent folder, select `byok` itself.
 
 There’s nothing to build and no dependencies to install.
 
+**On Android:** install through your browser's supported add-on installation method. The desktop **Load unpacked** steps above do not describe phone installation. Firefox requires a Mozilla-signed extension for normal installation; the GitHub ZIP is unsigned source for testing or signing. Preparing this package does not publish it to Firefox Add-ons or Edge Add-ons. See [Mozilla's Android extension guide](https://extensionworkshop.com/documentation/develop/developing-extensions-for-firefox-for-android/) and [signing requirements](https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/).
+
 ### 2. Connect your provider
 
 1. Open the extension and select **Settings**.
@@ -51,11 +53,15 @@ Reload an open manga webpage, hover over an image, and click **Translate**. You 
 
 For a full page, scroll first so its images load, then open the extension and choose **Translate page**. Images are processed in page order.
 
+**Phone controls:** open the extension and tap **Choose one image**, return to the page, then tap the manga image. Use **Translate** in the bottom toolbar. Selecting an image does not call the API. You can also tap an unlinked image directly to show its controls; use **Choose one image** when the reader uses taps to navigate. Swiping and pinch zoom retain their normal browser behavior. Use **Close** to dismiss the toolbar and **Stop** to cancel image selection or translation.
+
+Controls follow the visible viewport when zooming, rotating the phone, or opening the keyboard. Overlay updates run on layout/viewport changes rather than continuously. Translation is retained when an unchanged `srcset` switches resolution with the same aspect ratio; picture art direction or changed image sources still require translating the new image.
+
 ## Reading controls
 
 | Want to… | Use |
 | --- | --- |
-| Translate one image | Hover → **Translate**, the right-click menu, or **Alt + Shift + Z** |
+| Translate one image | **Choose one image** → tap image → **Translate**, or hover on desktop |
 | Translate loaded images on the page | **Translate page** in the extension popup |
 | Cancel the current request and remaining images | **Stop translation** in the popup, or **Stop** beside Settings on the page |
 | Adjust translated text or its placement | **Edit** on a translated image |
@@ -69,7 +75,7 @@ Settings changes apply to future requests. Finish or stop a page translation bef
 
 Image portions and language preferences go directly to your selected AI provider. Translation uses your provider’s API; it doesn’t require a Tori account or service.
 
-Your key is saved locally in the extension, without browser sync. It is **not encrypted at rest**, and only trusted extension contexts can read it. Use **Delete API Key** in Settings to remove the saved key.
+Your key is saved locally in the extension, without browser sync. It is **not encrypted at rest** and is never included in page/content-script messages. Storage access is restricted to trusted extension contexts where the browser supports that API. Use **Delete API Key** in Settings to remove the saved key.
 
 To reduce token use, each tile uses a compact prompt and response format. Original transcriptions are omitted by default; enable **Include original transcription in the editor** if needed. OCR resolution is unchanged.
 

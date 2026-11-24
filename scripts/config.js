@@ -47,5 +47,5 @@ export function requireReady(c) {
 }
 export function publicConfig(c) {
   const { apiKey, endpoint, ...safe } = c;
-  return { ...safe, configured: Boolean(apiKey && c.model) };
+  return { ...safe, effectiveTileSize: requestOptions(c).tileSize, configured: Boolean(apiKey && c.model) };
 }

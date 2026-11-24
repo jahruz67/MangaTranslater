@@ -107,7 +107,10 @@ requestTimeout is seconds (0 = automatic). Automatic uses 240 seconds for model
 IDs containing gemma-4-31b-it and 90 seconds otherwise. Explicit limits are
 bounded to 30-240 seconds. Gemma uses tiles up to 1000 pixels, respecting smaller
 user settings, and streaming on the Gemini and compatible adapters.
-Storage is restricted to TRUSTED_CONTEXTS. Content scripts receive a public
+Storage is restricted to TRUSTED_CONTEXTS where the browser supports that API.
+Native promise-based browser APIs are used on Firefox; absent storage access
+controls, context menus and keyboard commands do not prevent startup.
+Content scripts receive a public
 projection without apiKey or endpoint. Save/read/delete/test are restricted to
 the extension's popup/settings URLs. Keys are not put in URL parameters, image
 requests, logs, exported images or page messages. Keys are not encrypted at rest.
@@ -167,7 +170,12 @@ pages and unloaded lazy images are not scanned. Scroll to load pages first.
 Fixed overlays follow normal image positioning and object-fit, but complex CSS
 transforms, ancestor clipping, padding/borders or unusual stacking may misalign.
 Fonts fall back to system glyphs where the bundled fonts lack a script.
-Only Chromium packaging is provided; Firefox and Safari are not verified.
+The shared Manifest V3 package targets Chromium 121+, Firefox 140+ and Firefox
+for Android 142+, using service-worker and module event-page background entries.
+Firefox declares website-content/authentication transmission for built-in
+consent and requires Mozilla signing for normal installation. Phone, Firefox
+and Safari behavior have not been verified on devices. Touch selection, viewport
+layout, responsive forms and event-driven overlay updates are implemented.
 
 TEST RESULTS
 Earlier baseline: all 23 automated tests passed; JavaScript syntax and resource

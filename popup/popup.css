@@ -1,6 +1,6 @@
 body.popup {
   box-sizing: border-box;
-  width: 380px;
+  width: min(380px, 100vw);
   padding: 22px;
   background: radial-gradient(ellipse at 0 0, #29213f 0, transparent 65%), #15141c;
   color: #f5f3fb;
@@ -13,7 +13,7 @@ body.popup {
 .popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
 .brand-icon { display: grid; place-items: center; width: 42px; height: 46px; flex-shrink: 0; border: 1px solid #8f73e35c; border-radius: 13px; background: linear-gradient(145deg, #8d6cdb33, #63409922); color: #cdb9ff; }
 .brand-icon svg { width: 25px; height: 25px; stroke-width: 1.5; }
-.brand-copy { flex: 1; }
+.brand-copy { flex: 1; min-width: 0; }
 .popup h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.5px; }
 .brand-copy p { margin: 3px 0 0; font-size: 11px; color: #aaa3b8; }
 .popup .settings-button { display: grid; place-items: center; padding: 9px; border: 1px solid #ffffff10; border-radius: 10px; color: #b9b0cb; background: #ffffff05; }
@@ -33,7 +33,7 @@ body.popup {
 .action-copy > span { display: block; margin-top: 2px; font-size: 10px; color: #eee6ff; }
 .popup .arrow { width: 17px; height: 17px; opacity: .8; }
 .secondary-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 9px; }
-.popup .secondary-actions button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 41px; padding: 9px 6px; border: 1px solid #ffffff12; border-radius: 9px; background: #ffffff04; color: #c0b8ce; font-size: 11px; }
+.popup .secondary-actions button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 9px 6px; border: 1px solid #ffffff12; border-radius: 9px; background: #ffffff04; color: #c0b8ce; font-size: 12px; }
 .popup .secondary-actions button:hover { background: #ffffff0b; border-color: #ffffff25; color: #f5f3fb; }
 .secondary-actions svg { width: 14px; height: 14px; }
 .shortcut-card { margin-top: 22px; padding: 15px 14px; background: #ffffff03; border: 1px solid #ffffff0d; border-radius: 12px; }
@@ -44,4 +44,7 @@ body.popup {
 .shortcut-card p { margin: 10px 0 0; font-size: 11px; line-height: 1.7; color: #a89fb9; }
 .shortcut-card strong { color: #cdc1e3; font-weight: 500; }
 .popup footer { margin-top: 16px; text-align: center; color: #a49bae; font-size: 10px; }
+.popup .pick-button { width: 100%; margin-top: 9px; min-height: 44px; }
+@media(max-width:360px){body.popup{padding:16px}.popup-header{gap:8px}.shortcut-heading{flex-wrap:wrap}.secondary-actions{grid-template-columns:1fr}}
+@media(hover:none) and (pointer:coarse){body.popup{width:100vw;max-width:480px;margin-inline:auto;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}.shortcut{display:none}.brand-copy p,.popup #status,.shortcut-card p{font-size:13px}.action-copy>span,.popup footer{font-size:12px}}
 @media (prefers-reduced-motion: reduce) { .popup button { transition: none; } }

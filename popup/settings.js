@@ -1,7 +1,8 @@
 const form = document.querySelector("form"), status = document.querySelector("#status");
+const api = globalThis.browser || globalThis.chrome;
 let saved;
 async function request(type, extra = {}) {
-  const r = await chrome.runtime.sendMessage({ type, ...extra });
+  const r = await api.runtime.sendMessage({ type, ...extra });
   if (!r?.ok) throw new Error(r?.error || "Extension is unavailable. Reload it.");
   return r.value;
 }

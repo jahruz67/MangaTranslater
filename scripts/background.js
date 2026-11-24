@@ -3,9 +3,9 @@ import { analyze, callProvider } from "./providers.js";
 import { withDeadline } from "./requests.js";
 import { TranslationCache, translationKey } from "./translation-cache.js";
 
-const api = chrome;
+const api = globalThis.browser || globalThis.chrome;
 // Content scripts get only the explicit public projection through messages.
-const ready = api.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" });
+const ready = api.storage.local.setAccessLevel?.(api.runtime.getBrowserInfo ? "TRUSTED_CONTEXTS" : { accessLevel: "TRUSTED_CONTEXTS" });
 const translations = new TranslationCache(api.storage.local);
 const settingsURLs = [api.runtime.getURL("popup/settings.html"), api.runtime.getURL("popup/popup.html")];
 export async function readConfig() {
@@ -143,17 +143,19 @@ api.tabs.onRemoved?.addListener(id => {
 api.runtime.onInstalled.addListener(async () => {
   await ready;
   if (!(await api.storage.local.get("config")).config) await api.storage.local.set({ config: DEFAULTS });
-  await api.contextMenus.removeAll();
-  api.contextMenus.create({ id: "translate-image", title: "Translate manga image", contexts: ["image"] });
+  if (api.contextMenus?.removeAll && api.contextMenus?.create) {
+    await api.contextMenus.removeAll();
+    api.contextMenus.create({ id: "translate-image", title: "Translate manga image", contexts: ["image"] });
+  }
 });
 async function sendTab(tabId, message) {
   if (!Number.isInteger(tabId)) return;
   try { await api.tabs.sendMessage(tabId, message, { frameId: 0 }); } catch {}
 }
-api.contextMenus.onClicked.addListener((info, tab) => {
+api.contextMenus?.onClicked?.addListener((info, tab) => {
   if (info.menuItemId === "translate-image") sendTab(tab?.id, { type: "translate-image", url: info.srcUrl });
 });
-api.commands.onCommand.addListener(async name => {
+api.commands?.onCommand?.addListener(async name => {
   if (name === "translate-image") {
     const [tab] = await api.tabs.query({ active: true, currentWindow: true });
     await sendTab(tab?.id, { type: name });
