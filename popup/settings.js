@@ -44,3 +44,6 @@ document.querySelector("#test").onclick = () => action(async () => {
 document.querySelector("#delete").onclick = () => action(async () => {
   await request("delete-key"); form.elements.apiKey.value = ""; status.textContent = "API key deleted.";
 });
+document.querySelector("#clear-cache").onclick = () => action(async () => {
+  await request("clear-cache"); status.textContent = "Saved translations cleared.";
+});

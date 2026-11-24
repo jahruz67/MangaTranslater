@@ -1,7 +1,7 @@
 export const DEFAULTS = Object.freeze({
   provider: "compatible", endpoint: "https://api.openai.com/v1", apiKey: "", model: "",
   source: "Auto", target: "English", quality: "natural", instructions: "",
-  detectSfx: false, cleanup: true, font: "NotoSans", fontScale: 1,
+  detectSfx: false, includeSource: false, reuseTranslations: true, cleanup: true, font: "NotoSans", fontScale: 1,
   tileSize: 1400, minImageSize: 180, requestTimeout: 0
 });
 export function normalize(input = {}) {
@@ -22,6 +22,8 @@ export function normalize(input = {}) {
   c.quality = c.quality === "literal" ? "literal" : "natural";
   c.cleanup = c.cleanup === true;
   c.detectSfx = c.detectSfx === true;
+  c.includeSource = c.includeSource === true;
+  c.reuseTranslations = c.reuseTranslations === true;
   for (const [key, low, high] of [["tileSize", 600, 2000], ["minImageSize", 50, 1000], ["fontScale", 0.5, 2]]) {
     c[key] = Math.min(high, Math.max(low, Number(c[key]) || DEFAULTS[key]));
   }

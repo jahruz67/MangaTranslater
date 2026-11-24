@@ -69,6 +69,10 @@ Image portions and language preferences go directly to your selected AI provider
 
 Your key is saved locally in the extension, without browser sync. It is **not encrypted at rest**, and only trusted extension contexts can read it. Use **Delete API Key** in Settings to remove the saved key.
 
+To reduce token use, each tile uses a compact prompt and response format. Original transcriptions are omitted by default; enable **Include original transcription in the editor** if needed. OCR resolution is unchanged.
+
+**Reuse saved translations** is enabled by default. Matching image tiles and translation settings reuse local results without an API request, including after a page reload or browser restart. The cache stores translated text and placement (up to 128 tiles / 2 MB), without source images or API keys. Language, wording, transcription, provider, model, key, and preference changes use separate results; font and cleanup changes can reuse them. Disable reuse for fresh results, or choose **Clear saved translations**. Deleting the API key also clears saved translations.
+
 Stopping a translation cancels the extension’s request, but your provider may still process or charge for work it already received. Deleting a key cannot recall a request already sent.
 
 ## A few things to know

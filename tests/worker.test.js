@@ -5,7 +5,7 @@ let access, messageListener, installed;
 const origin = "chrome-extension://test/";
 globalThis.chrome = {
   storage: { local: { setAccessLevel: async v => { access = v; }, get: async key => structuredClone({ [key]: data[key] }),
-    set: async value => Object.assign(data, structuredClone(value)) } },
+    set: async value => Object.assign(data, structuredClone(value)), remove: async key => { delete data[key]; } } },
   runtime: { id: "test", getURL: p => origin+p, openOptionsPage: async () => {},
     onMessage: { addListener: fn => messageListener = fn }, onInstalled: { addListener: fn => installed = fn } },
   contextMenus: { removeAll: async () => {}, create() {}, onClicked: { addListener() {} } },
@@ -68,7 +68,7 @@ test("worker install, persistence across reload, key deletion and message bounda
   assert.equal((await restarted.readConfig()).target, "French");
   const safe = await worker.handle({ type: "public-config" }, content);
   assert.equal(safe.apiKey, undefined); assert.equal(safe.configured, true);
-  for (const type of ["get-config", "save-config", "delete-key", "test"]) {
+  for (const type of ["get-config", "save-config", "delete-key", "clear-cache", "test"]) {
     await assert.rejects(worker.handle({ type, config }, content), /Open Settings/);
   }
   await assert.rejects(worker.handle({ type: "get-config" }, { id: "different" }), /Unknown message source/);
@@ -82,12 +82,12 @@ test("connection test and image tiling/analysis use the saved configuration", as
   await worker.handle({ type: "save-config", config: { ...data.config, apiKey: "private-key", model: "vision-test", tileSize: 1000 } }, settings);
   const previousFetch = globalThis.fetch;
   const calls = [];
-  let closed = false;
+  let closed = false, encoded = 0;
   globalThis.createImageBitmap = async () => ({ width: 1000, height: 2500, close() { closed = true; } });
   globalThis.OffscreenCanvas = class {
     constructor(width, height) { this.width = width; this.height = height; }
     getContext() { return { fillRect() {}, drawImage() {} }; }
-    async convertToBlob() { return new Blob(["image"], { type: "image/jpeg" }); }
+    async convertToBlob() { return new Blob([`image-${encoded++}`], { type: "image/jpeg" }); }
   };
   globalThis.fetch = async (url, options) => {
     calls.push({ url, options });
@@ -110,5 +110,57 @@ test("connection test and image tiling/analysis use the saved configuration", as
     assert.equal(calls[1].options.headers, undefined);
     await assert.rejects(worker.handle({ type: "analyze", image: "bad" }, content), /Invalid image payload/);
     await assert.rejects(worker.handle({ type: "prepare", url: "file:///secret" }, content), /Unsupported image source/);
+  } finally { globalThis.fetch = previousFetch; }
+});
+
+test("worker reuses completed tiles across tabs, respects settings, and can bypass or clear results", async () => {
+  const previousFetch = globalThis.fetch;
+  let calls = 0;
+  const config = { apiKey: "cache-key", model: "cache-test" };
+  const message = { type: "analyze", image: "data:image/jpeg;base64,Yw==" };
+  globalThis.fetch = async () => {
+    calls++;
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"regions":[{"box":[50,100,200,150],"text":"Hello"}]}' } }] }));
+  };
+  try {
+    await worker.handle({ type: "save-config", config }, settings);
+    await worker.handle({ type: "clear-cache" }, settings);
+    const first = await worker.handle(message, content);
+    assert.deepEqual(await worker.handle(message, { ...content, tab: { id: 2 } }), first);
+    assert.equal(calls, 1);
+    await worker.handle({ type: "save-config", config: { ...config, font: "WildWords", cleanup: false } }, settings);
+    await worker.handle(message, content);
+    assert.equal(calls, 1);
+    await worker.handle({ type: "save-config", config: { ...config, target: "Spanish" } }, settings);
+    await worker.handle(message, content);
+    assert.equal(calls, 2);
+    await worker.handle({ type: "save-config", config: { ...config, reuseTranslations: false } }, settings);
+    await worker.handle(message, content);
+    await worker.handle(message, content);
+    assert.equal(calls, 4);
+    await worker.handle({ type: "save-config", config }, settings);
+    await worker.handle({ type: "clear-cache" }, settings);
+    await worker.handle(message, content);
+    assert.equal(calls, 5);
+    await worker.handle({ type: "delete-key" }, settings);
+    assert.equal(data.translationCache, undefined);
+  } finally { globalThis.fetch = previousFetch; }
+});
+
+test("failed OCR is never cached; successful no-text tiles are reused", async () => {
+  const previousFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    const value = calls === 1 ? "invalid JSON" : '{"regions":[]}';
+    return new Response(JSON.stringify({ choices: [{ message: { content: value } }] }));
+  };
+  try {
+    await worker.handle({ type: "save-config", config: { apiKey: "test-key", model: "empty-cache-test" } }, settings);
+    const message = { type: "analyze", image: "data:image/jpeg;base64,ZA==" };
+    await assert.rejects(worker.handle(message, content), /Malformed OCR/);
+    assert.deepEqual(await worker.handle(message, content), []);
+    assert.deepEqual(await worker.handle(message, content), []);
+    assert.equal(calls, 2);
   } finally { globalThis.fetch = previousFetch; }
 });

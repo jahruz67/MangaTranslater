@@ -62,6 +62,7 @@ manifest.json: independent MV3 entry points, settings page, image context menu,
 keyboard command, storage/activeTab/contextMenus permissions and host access.
 scripts/config.js: defaults, validation, key/model readiness, public projection.
 scripts/providers.js: common request adapter interface and validated regions.
+scripts/translation-cache.js: bounded local translation cache and hashed keys.
 scripts/background.js: trusted local storage, provider requests, image retrieval,
 bounded image decoding, overlapping OCR tiles and message routing.
 scripts/render.js: wrapping, auto-sizing, region deduplication and canvas text.
@@ -98,9 +99,10 @@ Cancellation closes the extension's request; a provider may still process or
 charge for work it already received.
 
 LOCAL STORAGE
-chrome.storage.local contains one config object:
+chrome.storage.local contains a config object and a bounded translationCache:
 provider, endpoint, apiKey, model, source, target, quality, instructions,
-detectSfx, cleanup, font, fontScale, tileSize, minImageSize, requestTimeout.
+detectSfx, includeSource, reuseTranslations, cleanup, font, fontScale, tileSize,
+minImageSize, requestTimeout.
 requestTimeout is seconds (0 = automatic). Automatic uses 240 seconds for model
 IDs containing gemma-4-31b-it and 90 seconds otherwise. Explicit limits are
 bounded to 30-240 seconds. Gemma uses tiles up to 1000 pixels, respecting smaller
@@ -110,8 +112,13 @@ projection without apiKey or endpoint. Save/read/delete/test are restricted to
 the extension's popup/settings URLs. Keys are not put in URL parameters, image
 requests, logs, exported images or page messages. Keys are not encrypted at rest.
 Only one selected provider/key/model is saved at a time. Switching provider or
-editing the endpoint clears the key field before saving. Translation results
-are held in page memory, not a persistent cache. Reloading removes them.
+editing the endpoint clears the key field before saving. Overlays are held in
+page memory. Validated translation results are reused locally by default, up to
+128 tiles / 2 MiB. Cache keys hash the image, prompt and provider/key/model;
+source images and API keys are not stored in the cache. Clearing saved results
+or deleting the API key clears the cache, including pending cache writes.
+Disable reuse for fresh results. Original transcription is optional and off by
+default; compact box arrays and omitted default fields reduce response tokens.
 
 ALL REMAINING NETWORK REQUESTS
 1. POST <configured base URL>/chat/completions for OpenAI-compatible providers.
@@ -151,8 +158,8 @@ Coordinates and OCR accuracy depend on the chosen model and may need correction.
 Solid background rectangles replace neural inpainting; textured art is not
 reconstructed. Tile boundaries can still split dialogue despite overlap.
 The lightweight editor supports translation text and rectangular geometry;
-original warps, brushes, custom font management, precise bubble masks, cached
-translations, automatic translation, screenshots/crop, PDF/ZIP export and
+original warps, brushes, custom font management, precise bubble masks,
+automatic translation, screenshots/crop, PDF/ZIP export and
 original multilingual interface are not carried over.
 Loaded IMG and readable CANVAS elements are supported in the top-level document.
 CSS background images, closed shadow trees, embedded frames, browser-protected
@@ -163,7 +170,9 @@ Fonts fall back to system glyphs where the bundled fonts lack a script.
 Only Chromium packaging is provided; Firefox and Safari are not verified.
 
 TEST RESULTS
-All 23 automated tests passed; JavaScript syntax and resource checks passed.
+Earlier baseline: all 23 automated tests passed; JavaScript syntax and resource
+checks passed. Current token-efficiency/cache changes and added regression
+cases were reviewed statically; tests/builds were not run (not requested).
 OCR requests now include an explicit JSON-only output contract: exact fields,
 coordinate bounds, escaped strings, no Markdown or explanation, and task
 preferences encoded separately as JSON data. The contract stays in the image

@@ -13,6 +13,10 @@
 <datalist id="languages"><option>Auto</option><option>English</option><option>Japanese</option><option>Korean</option><option>Chinese</option><option>Spanish</option><option>French</option><option>German</option><option>Portuguese</option><option>Arabic</option></datalist>
 <label>Translation quality<select name="quality"><option value="natural">Natural wording</option><option value="literal">Literal wording</option></select></label>
 <label>Translation preferences<textarea name="instructions" rows="3" maxlength="2000" placeholder="Terminology, tone, character names…"></textarea></label>
+<label><input name="includeSource" type="checkbox">Include original transcription in the editor (uses more output tokens)</label>
+<label><input name="reuseTranslations" type="checkbox">Reuse saved translations for matching images and translation settings</label>
+<small>Saved text stays locally in this extension, up to 2 MB. Repeated tiles can skip API requests. Disable reuse for a fresh translation.</small>
+<button type="button" class="secondary" id="clear-cache">Clear saved translations</button>
 <label>Request timeout<select name="requestTimeout"><option value="0">Automatic (90 seconds; 4 minutes for Gemma 4 31B)</option><option value="60">1 minute</option><option value="90">90 seconds</option><option value="180">3 minutes</option><option value="240">4 minutes</option></select><small>Gemma 4 31B uses streaming and OCR tiles up to 1000 pixels to reduce each request. Stop remains available while waiting. Your API host may enforce a shorter limit.</small></label>
 <h2>OCR and rendering</h2>
 <label><input name="detectSfx" type="checkbox">Include sound effects</label>

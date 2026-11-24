@@ -1,10 +1,12 @@
 import { DEFAULTS, normalize, requireReady, publicConfig, requestOptions } from "./config.js";
 import { analyze, callProvider } from "./providers.js";
 import { withDeadline } from "./requests.js";
+import { TranslationCache, translationKey } from "./translation-cache.js";
 
 const api = chrome;
 // Content scripts get only the explicit public projection through messages.
 const ready = api.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" });
+const translations = new TranslationCache(api.storage.local);
 const settingsURLs = [api.runtime.getURL("popup/settings.html"), api.runtime.getURL("popup/popup.html")];
 export async function readConfig() {
   await ready;
@@ -21,7 +23,11 @@ async function serialize(sender, generation, job) {
   // Extension API activity prevents idle shutdown while a streamed model thinks.
   // Bounded to the running request; always removed on success, failure or Stop.
   const keepAlive = setInterval(() => { api.runtime.getPlatformInfo?.().catch(() => {}); }, 20000);
-  try { return await job(controller.signal); } finally { clearInterval(keepAlive); active.delete(id); }
+  try { return await job(controller.signal); }
+  catch (error) {
+    if (controller.signal.aborted) throw new Error("Request cancelled.");
+    throw error;
+  } finally { clearInterval(keepAlive); active.delete(id); }
 }
 async function dataURL(blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -76,6 +82,7 @@ export async function handle(msg, sender) {
     return true;
   }
   const generation = generations.get(id) || 0;
+  const cacheGeneration = translations.generation;
   const c = await readConfig();
   switch (msg.type) {
     case "public-config": return publicConfig(c);
@@ -89,6 +96,11 @@ export async function handle(msg, sender) {
     case "delete-key":
       if (!trusted) throw new Error("Open Settings to remove the API key.");
       await api.storage.local.set({ config: { ...c, apiKey: "" } });
+      await translations.clear();
+      return true;
+    case "clear-cache":
+      if (!trusted) throw new Error("Open Settings to clear saved translations.");
+      await translations.clear();
       return true;
     case "open-settings": await api.runtime.openOptionsPage(); return true;
     case "test":
@@ -104,7 +116,17 @@ export async function handle(msg, sender) {
     case "analyze":
       requireReady(c);
       if (typeof msg.image !== "string" || !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(msg.image) || msg.image.length > 12000000) throw new Error("Invalid image payload.");
-      return serialize(sender, generation, signal => analyze(c, msg.image, undefined, signal));
+      return serialize(sender, generation, async signal => {
+        const key = c.reuseTranslations ? await translationKey(c, msg.image) : undefined;
+        const cached = key ? await translations.get(key) : undefined;
+        signal.throwIfAborted();
+        if (cached !== undefined) return cached;
+        const regions = await analyze(c, msg.image, undefined, signal);
+        signal.throwIfAborted();
+        if (key) await translations.put(key, regions, cacheGeneration);
+        signal.throwIfAborted();
+        return regions;
+      });
     default: throw new Error("Unknown request.");
   }
 }

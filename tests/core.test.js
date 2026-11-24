@@ -32,6 +32,10 @@ test("fresh configuration, key deletion, secret projection and normalization", (
   const safe = publicConfig(config);
   assert.equal(safe.configured, true); assert.equal("apiKey" in safe, false); assert.equal("endpoint" in safe, false);
   assert.equal(publicConfig({ ...config, apiKey: "" }).configured, false);
+  assert.equal(normalize(config).includeSource, false);
+  assert.equal(normalize(config).reuseTranslations, true);
+  assert.equal(normalize({ ...config, includeSource: true, reuseTranslations: false }).includeSource, true);
+  assert.equal(normalize({ ...config, reuseTranslations: false }).reuseTranslations, false);
   assert.equal(normalize({ ...config, tileSize: 5000 }).tileSize, 2000);
   assert.throws(() => normalize({ ...config, endpoint: "http://remote.example/v1" }), /HTTPS/);
   assert.doesNotThrow(() => normalize({ ...config, endpoint: "http://localhost:8080/v1" }));
@@ -87,6 +91,15 @@ test("tile overlaps deduplicate repeated regions while preserving other dialogue
 test("OCR accepts numeric strings and omitted source text", () => {
   const result = parseRegions(JSON.stringify({ regions: [{ x: "50", y: "100", width: "200", height: "150", translation: " Hola " }] }));
   assert.deepEqual(result, [{ ...region, source: "" }]);
+});
+
+test("compact OCR boxes preserve rendering geometry and optional source/background", () => {
+  const compact = { box: [50, 100, 200, 150], text: "Hola" };
+  assert.deepEqual(parseRegions(JSON.stringify({ coordinate_system: "normalized_1000", regions: [compact] })), [{ ...region, source: "" }]);
+  assert.deepEqual(parseRegions(JSON.stringify({ regions: [{ ...compact, source: "hello", background: "#eeeeee" }] })), [{ ...region, background: "#eeeeee" }]);
+  for (const box of [[50, 100, 200], [50, 100, -1, 150], [950, 100, 200, 150], [null, 100, 200, 150]]) {
+    assert.throws(() => parseRegions(JSON.stringify({ regions: [{ ...compact, box }] })), /Malformed/);
+  }
 });
 test("OCR normalizes fractions, explicit percentages and named box formats", () => {
   const fractional = { x: 0.05, y: 0.1, width: 0.2, height: 0.15, text: "Hola", source: "hello" };
