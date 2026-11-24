@@ -71,7 +71,7 @@ popup/settings.html, settings.js, style.css: local configuration and connection 
 popup/popup.html, popup.js: page actions and settings link.
 package.json: Node test command only; no dependencies or build scripts.
 tests/core.test.js, tests/worker.test.js: mocked behavior tests.
-README.txt, TECHNICAL_REPORT.txt: installation and implementation notes.
+README.md, TECHNICAL_REPORT.txt: installation and implementation notes.
 Reused unchanged: fonts/NotoSans.ttf, fonts/WildWords.otf, images/16.png,
 images/48.png, images/128.png. Other original frontend dependencies were not
 copied because they require the larger backend/account-coupled application.
@@ -201,5 +201,5 @@ edit/restore/export, try a rejected key, and delete the key.
 
 BUILD / INSTALLATION
 No build step exists or is needed. Load this byok folder as an unpacked extension
-using the steps in README.txt. Do not load the parent/original manifest.
+using the steps in README.md. Do not load the parent/original manifest.
 For the non-browser automated checks: node --test tests/*.test.js
